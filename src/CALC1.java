@@ -62,7 +62,7 @@ public class CALC1 {
         String strParsed = newStr2;
 
         //in = new Scanner(restOfCommand).useDelimiter("-|+|*|/|^|sqrt");
-        String[] tempNums = strParsed.split("\\W|sqrt");
+        String[] tempNums = strParsed.split("\\W");
 
         Double[] numbers = new Double[tempNums.length];
         for(int i = 0; i < numbers.length; i++){
@@ -101,10 +101,10 @@ public class CALC1 {
             restOfCommand = restOfCommand.replaceAll("/", " / ");
         }
         if(restOfCommand.contains("^")){
-            restOfCommand = restOfCommand.replaceAll("^", " ^ ");
+            restOfCommand = restOfCommand.replaceAll("\\^", " ^ ");
         }
         if(restOfCommand.contains("&")){
-            restOfCommand = restOfCommand.replaceAll("&", "& ");
+            restOfCommand = restOfCommand.replaceAll("\\&", "& ");
         }
         return restOfCommand.trim();
     }
