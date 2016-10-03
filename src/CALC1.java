@@ -1,45 +1,44 @@
 import java.util.*;
-import java.io.*;
+
 /**
  * Created by Giampiero on 9/19/2016.
  */
 public class CALC1 {
 
     //private static ArrayList<HashMap<String, Integer>> lstVars = new ArrayList<>();
-    private static Map<String, Integer> lstVars = new HashMap<>();
-
-    public static void main(String[] args) throws IOException {
-        int i = 30;
-
+    private static Map<String, Double> lstVars = new HashMap<>();
+    private static Scanner in;
+    public static void main(String[] args){
+        System.out.println("$>READY FOR INPUT");
 
         String command = "";
-        int value = 0;
-
-            System.out.println("READY FOR INPUT ");
-           while(true){
-               Scanner scanner = new Scanner(System.in);
-               command = scanner.nextLine();
-               ProcessCommand(command);
-               System.out.println();
-           }
-
-
-
-
+        while (true){
+            System.out.print("$>");
+            in = new Scanner(System.in);
+            command = in.nextLine();
+            if (command.contains("stop")){
+                break;
+            }
+            ProcessCommand(command);
+            in.reset();
+        }
+        in.close();
+        System.exit(1);
 
     }
-    private static void ProcessCommand (String command){
 
+    private static void ProcessCommand(String command) {
+        if(command.isEmpty()){
+            //System.out.println();
+            return;
+        }
         String firstCommand = "";
         String restOfCommand = "";
-        if (command.contains("stop")){
-            System.exit(1);
-        }
-        Scanner strParser = new Scanner(command).useDelimiter(" ");
-
-        firstCommand = strParser.next().trim();
+        in = new Scanner(command).useDelimiter(" ");
+        firstCommand = in.next().trim();
         if(firstCommand.length() > 0){
-            restOfCommand = strParser.nextLine().trim();
+            restOfCommand = in.nextLine().trim();
+            in.reset();
             switch(firstCommand){
                 case "load": Load(restOfCommand);
                     break;
@@ -47,41 +46,130 @@ public class CALC1 {
                     break;
                 case "print": Print(restOfCommand);
                     break;
-                default: Calculate(firstCommand, restOfCommand);
+                default: ParseMathString(firstCommand, restOfCommand);
             }
         }
-        strParser.close();
+
     }
 
-//    private static int ProcessCommand() {
-//        String command = "";
-//        String firstCommand = "";
-//        String restOfCommand = "";
-//        if (command.contains("stop")){
-//            return -1;
-//        }
-//        Scanner strParser = new Scanner(command).useDelimiter(" ");
-//
-//        firstCommand = strParser.next().trim();
-//        if(firstCommand.length() > 0){
-//            restOfCommand = strParser.nextLine().trim();
-//            switch(firstCommand){
-//                case "load": Load(restOfCommand);
-//                    break;
-//                case "mem": Mem(restOfCommand);
-//                    break;
-//                case "print": Print(restOfCommand);
-//                    break;
-//                default: Calculate(firstCommand, restOfCommand);
-//            }
-//        }
-//        strParser.close();
-//
-//        return 1;
-//    }
+    private static void ParseMathString(String firstCommand, String restOfCommand) {
+        in.reset();
 
-    private static void Calculate(String firstCommand, String restOfCommand) {
+        String edits = restOfCommand.replaceAll("sqrt ", "&").trim();
+        String newStr = edits.replaceAll("=", "").trim();
+        String newStr2 = newStr.replaceAll(" ", "").trim();
 
+        String strParsed = newStr2;
+
+        //in = new Scanner(restOfCommand).useDelimiter("-|+|*|/|^|sqrt");
+        String[] tempNums = strParsed.split("\\W|sqrt");
+
+        Double[] numbers = new Double[tempNums.length];
+        for(int i = 0; i < numbers.length; i++){
+            if (isNumeric(tempNums[i])){
+                numbers[i] = Double.parseDouble(tempNums[i]);
+            }else{
+                if(lstVars.containsKey(tempNums[i])) {
+                    numbers[i] = lstVars.get(tempNums[i]);
+                    strParsed = strParsed.replaceAll(tempNums[i], (Double.toString(numbers[i])));
+
+                }
+
+            }
+        }
+        String sqrtGone = strParsed.replaceAll("1", "1.0");
+        String parsed = sqrtGone.replaceAll("&1.0", "1.0");
+        String moreStr = AddWhiteSpace(parsed);
+        String finalParse = RemoveSqrt(moreStr);
+        if(lstVars.containsKey(firstCommand)){
+            lstVars.put(firstCommand, Calculate(finalParse));
+        }
+
+    }
+
+    private static String AddWhiteSpace(String restOfCommand) {
+        if(restOfCommand.contains("*")){
+            restOfCommand = restOfCommand.replaceAll("\\*", " * ");
+        }
+        if(restOfCommand.contains("-")){
+            restOfCommand = restOfCommand.replaceAll("-", " - ");
+        }
+        if(restOfCommand.contains("+")){
+            restOfCommand = restOfCommand.replaceAll("\\+", " + ");
+        }
+        if(restOfCommand.contains("/")){
+            restOfCommand = restOfCommand.replaceAll("/", " / ");
+        }
+        if(restOfCommand.contains("^")){
+            restOfCommand = restOfCommand.replaceAll("^", " ^ ");
+        }
+        if(restOfCommand.contains("&")){
+            restOfCommand = restOfCommand.replaceAll("&", "& ");
+        }
+        return restOfCommand.trim();
+    }
+
+    private static String RemoveSqrt(String strMath){
+        String current = "";
+        String returnStr = "";
+        in.reset();
+        in = new Scanner(strMath).useDelimiter(" ");
+        String token = "";
+        ArrayList<String> arr = new ArrayList<>();
+        while (in.hasNext()) {
+            token = in.next();
+            if(token.equals("&")){
+                current = in.next();
+                returnStr += Double.toString(Math.sqrt(Double.parseDouble(current))) + " ";
+            } else {
+                returnStr += token + " ";
+            }
+        }
+        in.reset();
+        return returnStr;
+    }
+
+    private static Double Calculate(String strMath){
+        String token;
+        Double total = 0.;
+        Double current = 0.;
+        String operator = "";
+        in = new Scanner(strMath).useDelimiter(" ");
+        total = Double.parseDouble(in.next());
+        while(in.hasNext()){
+            token = in.next();
+            if(isNumeric(token)){
+                current = Double.parseDouble(token);
+                switch(operator){
+                    case "+": total += current;
+                        break;
+                    case "-": total = total - current;
+                        break;
+                    case "*": total = total * current;
+                        break;
+                    case "/": total = total / current;
+                        break;
+                    case "^": total = Math.pow(total, current);
+                        break;
+                }
+            }else {
+                operator = token;
+            }
+
+        }
+        return total;
+    }
+
+    private static boolean isNumeric(String str){
+        try
+        {
+            Double d = Double.parseDouble(str);
+        }
+        catch(NumberFormatException nfe)
+        {
+            return false;
+        }
+        return true;
     }
 
     private static void Print(String restOfCommand) {
@@ -91,26 +179,20 @@ public class CALC1 {
     }
 
     private static void Mem(String restOfCommand) {
-        lstVars.put(restOfCommand, 0);
+        lstVars.put(restOfCommand, 0.0);
     }
 
     private static void Load(String command) {
-        Scanner in = new Scanner(System.in);
+        in = new Scanner(System.in);
         String key = command;
-        Integer value = 0;
-        System.out.println("ENTER VALUE FOR " + command.toUpperCase());
-        value = in.nextInt();
+        Double value = 0.0;
+        System.out.println("$>ENTER VALUE FOR " + command.toUpperCase());
+        System.out.print("$>");
+        value = in.nextDouble();
         //tempVar.put(key, value);
         lstVars.put(key, value);
         //System.out.println(lstVars.get(key));
         in.nextLine();
-        in.close();
-    }
-
-    private static void clearThisFuckingScreen(){
-        final String ANSI_CLS = "\u001b[2J";
-        final String ANSI_HOME = "\u001b[H";
-        System.out.print(ANSI_CLS + ANSI_HOME);
-        System.out.flush();
+        in.reset();
     }
 }
