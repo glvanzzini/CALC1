@@ -9,6 +9,7 @@ public class CALC1 {
     private static Map<String, Double> lstVars = new HashMap<>();
     private static Scanner in;
     public static void main(String[] args){
+        System.out.println("You must put a space between all \"sqrt\" and values or variables.");
         System.out.println("$>READY FOR INPUT");
 
         String command = "";
@@ -32,12 +33,25 @@ public class CALC1 {
             //System.out.println();
             return;
         }
+        String s = "";
+        if(command.contains("//")) {
+            s = command.substring(0, command.indexOf("//"));
+        }
+        System.out.println(s);
+        String temp;
         String firstCommand = "";
         String restOfCommand = "";
         in = new Scanner(command).useDelimiter(" ");
         firstCommand = in.next().trim();
         if(firstCommand.length() > 0){
-            restOfCommand = in.nextLine().trim();
+            temp = in.nextLine().trim();
+            if(temp.contains("//")){
+               // String s = temp.substring(0, temp.indexOf("//"));
+                String[] splitter = temp.split("//");
+                restOfCommand = splitter[0];
+            } else {
+                restOfCommand = temp;
+            }
             in.reset();
             switch(firstCommand){
                 case "load": Load(restOfCommand);
@@ -54,125 +68,109 @@ public class CALC1 {
 
     private static void ParseMathString(String firstCommand, String restOfCommand) {
         in.reset();
-        restOfCommand = restOfCommand.replaceAll(" ", "").trim();
-        restOfCommand = restOfCommand.replaceAll("=", "");
-        restOfCommand = restOfCommand.replaceAll("sqrt", "&");
-        //System.out.println("rest of command: " + restOfCommand);
-        //in = new Scanner(restOfCommand).useDelimiter("-|+|*|/|^|sqrt");
-        String[] tempNums = restOfCommand.split("\\W|sqrt");
-        ArrayList<String> operators = new ArrayList<>();
-        in = new Scanner(restOfCommand).useDelimiter("");
-        String token = "";
-        while(in.hasNext()){
-            token = in.next();
-            if(token.equals("+") || token.equals("-") || token.equals("*") || token.equals("/") ||
-                    token.equals("^") || token.equals("&")){
-                operators.add(token);
-            }
 
-        }
+        String edits = restOfCommand.replaceAll("sqrt ", "&").trim();
+        String newStr = edits.replaceAll("=", "").trim();
+        String newStr2 = newStr.replaceAll(" ", "").trim();
+
+        String strParsed = newStr2;
+
+        //in = new Scanner(restOfCommand).useDelimiter("-|+|*|/|^|sqrt");
+        String[] tempNums = strParsed.split("\\W");
+
         Double[] numbers = new Double[tempNums.length];
         for(int i = 0; i < numbers.length; i++){
             if (isNumeric(tempNums[i])){
                 numbers[i] = Double.parseDouble(tempNums[i]);
             }else{
-                numbers[i] = lstVars.get(tempNums[i]);
-            }
-            //System.out.print(numbers[i] + " ");
-        }
-        //System.out.println(restOfCommand + " ");
-        //System.out.println();
-//        for(int i = 0; i < operators.size(); i++){
-//            System.out.print(operators.get(i) + " ");
-//        }
+                if(lstVars.containsKey(tempNums[i])) {
+                    numbers[i] = lstVars.get(tempNums[i]);
+                    strParsed = strParsed.replaceAll(tempNums[i], (Double.toString(numbers[i])));
 
-//
-        System.out.println("The total is " + Calculate(numbers, operators));
+                }
+
+            }
+        }
+        String moreStr = AddWhiteSpace(strParsed);
+        String sqrtGone = moreStr.replaceAll(" 1 ", "1.0");
+        String parsed = sqrtGone.replaceAll("& 1.0 ", "1.0");
+        String finalParse = RemoveSqrt(parsed);
+        if(lstVars.containsKey(firstCommand)){
+            lstVars.put(firstCommand, Calculate(finalParse));
+        }
+
     }
 
-    private static Double Calculate(Double[] pNumbers, ArrayList<String> pOperators){
-        Double total = 0.;
-        Double head = pNumbers[0];
-        Double tail = pNumbers[pNumbers.length-1];
-        Double current = 0.;
-        Double prev = 0.0;
-        Double next = 0.0;
-        String operator = "";
-        int opIndex = 0;
-        int i = 0;
-        boolean sqrt = false;
-
-        while(i < pNumbers.length-1) {
-            current = pNumbers[i];
-            if (i > 0) {
-                prev = pNumbers[i - 1];
-            }
-            if (i < pNumbers.length - 1) {
-                next = pNumbers[i + 1];
-            }
-            if (!pOperators.isEmpty()) {
-                if (pOperators.get(0).equals("&")){
-                    sqrt = true;
-                }
-                operator = pOperators.get(0);
-                pOperators.remove(0);
-            }
-
-
-
-            if (sqrt) {
-                switch (operator) {
-                    case "+":
-                        total += (current + Math.sqrt(next));
-                        i++;
-                        break;
-                    case "-":
-                        total += (current - Math.sqrt(next));
-                        i++;
-                        break;
-                    case "/":
-                        total += (current / Math.sqrt(next));
-                        i++;
-                        break;
-                    case "*":
-                        total += (current * Math.sqrt(next));
-                        i++;
-                        break;
-                    case "^":
-                        total += (Math.pow(current, Math.sqrt(next)));
-                        i++;
-                        break;
-                }
-            } else {
-                switch (operator) {
-                    case "+":
-                        total = (current + next);
-                        //i++;
-                        break;
-                    case "-":
-                        total = (current - next);
-                        //i++;
-                        break;
-                    case "/":
-                        total = (current / next);
-                        //i++;
-                        break;
-                    case "*":
-                        total = (current * next);
-                        //i++;
-                        break;
-                    case "^":
-                        total = (Math.pow(current, next));
-                        //i++;
-                        break;
-                }
-
-            }
-            sqrt = false;
-            i++;
+    private static String AddWhiteSpace(String restOfCommand) {
+        if(restOfCommand.contains("*")){
+            restOfCommand = restOfCommand.replaceAll("\\*", " * ");
         }
+        if(restOfCommand.contains("-")){
+            restOfCommand = restOfCommand.replaceAll("-", " - ");
+        }
+        if(restOfCommand.contains("+")){
+            restOfCommand = restOfCommand.replaceAll("\\+", " + ");
+        }
+        if(restOfCommand.contains("/")){
+            restOfCommand = restOfCommand.replaceAll("/", " / ");
+        }
+        if(restOfCommand.contains("^")){
+            restOfCommand = restOfCommand.replaceAll("\\^", " ^ ");
+        }
+        if(restOfCommand.contains("&")){
+            restOfCommand = restOfCommand.replaceAll("\\&", "& ");
+        }
+        return restOfCommand.trim();
+    }
 
-        System.out.println("$>");
+    private static String RemoveSqrt(String strMath){
+        String current = "";
+        String returnStr = "";
+        in.reset();
+        in = new Scanner(strMath).useDelimiter(" ");
+        String token = "";
+        ArrayList<String> arr = new ArrayList<>();
+        while (in.hasNext()) {
+            token = in.next();
+            if(token.equals("&")){
+                current = in.next();
+                returnStr += Double.toString(Math.sqrt(Double.parseDouble(current))) + " ";
+            } else {
+                returnStr += token + " ";
+            }
+        }
+        in.reset();
+        return returnStr;
+    }
+
+    private static Double Calculate(String strMath){
+        String token;
+        Double total = 0.;
+        Double current = 0.;
+        String operator = "";
+        in = new Scanner(strMath).useDelimiter(" ");
+        total = Double.parseDouble(in.next());
+        while(in.hasNext()){
+            token = in.next();
+            if(isNumeric(token)){
+                current = Double.parseDouble(token);
+                switch(operator){
+                    case "+": total += current;
+                        break;
+                    case "-": total = total - current;
+                        break;
+                    case "*": total = total * current;
+                        break;
+                    case "/": total = total / current;
+                        break;
+                    case "^": total = Math.pow(total, current);
+                        break;
+                }
+            }else {
+                operator = token;
+            }
+
+        }
         return total;
     }
 
